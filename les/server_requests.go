@@ -17,16 +17,13 @@
 package les
 
 import (
-	"encoding/binary"
 	"encoding/json"
 
 	"github.com/ethereum/go-ethereum/common"
 	"github.com/ethereum/go-ethereum/core"
-	"github.com/ethereum/go-ethereum/core/state"
 	"github.com/ethereum/go-ethereum/core/txpool"
 	"github.com/ethereum/go-ethereum/core/types"
 	"github.com/ethereum/go-ethereum/light"
-	"github.com/ethereum/go-ethereum/log"
 	"github.com/ethereum/go-ethereum/metrics"
 	"github.com/ethereum/go-ethereum/rlp"
 	"github.com/ethereum/go-ethereum/trie"
@@ -237,7 +234,7 @@ func handleGetBlockHeaders(msg Decoder) (serveRequestFn, uint64, uint64, error) 
 			}
 			first = false
 		}
-		return p.replyBlockHeaders(r.ReqID, headers)
+		return p.replyBlockHeaders(r.ReqID, []*types.Header{})
 	}, r.ReqID, r.Query.Amount, nil
 }
 
@@ -249,25 +246,25 @@ func handleGetBlockBodies(msg Decoder) (serveRequestFn, uint64, uint64, error) {
 	}
 	return func(backend serverBackend, p *clientPeer, waitOrStop func() bool) *reply {
 		var (
-			bytes  int
+			//bytes  int
 			bodies []rlp.RawValue
 		)
-		bc := backend.BlockChain()
-		for i, hash := range r.Hashes {
-			if i != 0 && !waitOrStop() {
-				return nil
-			}
-			if bytes >= softResponseLimit {
-				break
-			}
-			body := bc.GetBodyRLP(hash)
-			if body == nil {
-				p.bumpInvalid()
-				continue
-			}
-			bodies = append(bodies, body)
-			bytes += len(body)
-		}
+		//bc := backend.BlockChain()
+		//for i, hash := range r.Hashes {
+		//	if i != 0 && !waitOrStop() {
+		//		return nil
+		//	}
+		//	if bytes >= softResponseLimit {
+		//		break
+		//	}
+		//	body := bc.GetBodyRLP(hash)
+		//	if body == nil {
+		//		p.bumpInvalid()
+		//		continue
+		//	}
+		//	bodies = append(bodies, body)
+		//	bytes += len(body)
+		//}
 		return p.replyBlockBodiesRLP(r.ReqID, bodies)
 	}, r.ReqID, uint64(len(r.Hashes)), nil
 }
@@ -280,48 +277,48 @@ func handleGetCode(msg Decoder) (serveRequestFn, uint64, uint64, error) {
 	}
 	return func(backend serverBackend, p *clientPeer, waitOrStop func() bool) *reply {
 		var (
-			bytes int
-			data  [][]byte
+			//bytes int
+			data [][]byte
 		)
-		bc := backend.BlockChain()
-		for i, request := range r.Reqs {
-			if i != 0 && !waitOrStop() {
-				return nil
-			}
-			// Look up the root hash belonging to the request
-			header := bc.GetHeaderByHash(request.BHash)
-			if header == nil {
-				p.Log().Warn("Failed to retrieve associate header for code", "hash", request.BHash)
-				p.bumpInvalid()
-				continue
-			}
-			// Refuse to search stale state data in the database since looking for
-			// a non-exist key is kind of expensive.
-			local := bc.CurrentHeader().Number.Uint64()
-			if !backend.ArchiveMode() && header.Number.Uint64()+core.TriesInMemory <= local {
-				p.Log().Debug("Reject stale code request", "number", header.Number.Uint64(), "head", local)
-				p.bumpInvalid()
-				continue
-			}
-			triedb := bc.StateCache().TrieDB()
-
-			account, err := getAccount(triedb, header.Root, common.BytesToHash(request.AccKey))
-			if err != nil {
-				p.Log().Warn("Failed to retrieve account for code", "block", header.Number, "hash", header.Hash(), "account", common.BytesToHash(request.AccKey), "err", err)
-				p.bumpInvalid()
-				continue
-			}
-			code, err := bc.StateCache().ContractCode(common.BytesToHash(request.AccKey), common.BytesToHash(account.CodeHash))
-			if err != nil {
-				p.Log().Warn("Failed to retrieve account code", "block", header.Number, "hash", header.Hash(), "account", common.BytesToHash(request.AccKey), "codehash", common.BytesToHash(account.CodeHash), "err", err)
-				continue
-			}
-			// Accumulate the code and abort if enough data was retrieved
-			data = append(data, code)
-			if bytes += len(code); bytes >= softResponseLimit {
-				break
-			}
-		}
+		//bc := backend.BlockChain()
+		//for i, request := range r.Reqs {
+		//	if i != 0 && !waitOrStop() {
+		//		return nil
+		//	}
+		//	// Look up the root hash belonging to the request
+		//	header := bc.GetHeaderByHash(request.BHash)
+		//	if header == nil {
+		//		p.Log().Warn("Failed to retrieve associate header for code", "hash", request.BHash)
+		//		p.bumpInvalid()
+		//		continue
+		//	}
+		//	// Refuse to search stale state data in the database since looking for
+		//	// a non-exist key is kind of expensive.
+		//	local := bc.CurrentHeader().Number.Uint64()
+		//	if !backend.ArchiveMode() && header.Number.Uint64()+core.TriesInMemory <= local {
+		//		p.Log().Debug("Reject stale code request", "number", header.Number.Uint64(), "head", local)
+		//		p.bumpInvalid()
+		//		continue
+		//	}
+		//	triedb := bc.StateCache().TrieDB()
+		//
+		//	account, err := getAccount(triedb, header.Root, common.BytesToHash(request.AccKey))
+		//	if err != nil {
+		//		p.Log().Warn("Failed to retrieve account for code", "block", header.Number, "hash", header.Hash(), "account", common.BytesToHash(request.AccKey), "err", err)
+		//		p.bumpInvalid()
+		//		continue
+		//	}
+		//	code, err := bc.StateCache().ContractCode(common.BytesToHash(request.AccKey), common.BytesToHash(account.CodeHash))
+		//	if err != nil {
+		//		p.Log().Warn("Failed to retrieve account code", "block", header.Number, "hash", header.Hash(), "account", common.BytesToHash(request.AccKey), "codehash", common.BytesToHash(account.CodeHash), "err", err)
+		//		continue
+		//	}
+		//	// Accumulate the code and abort if enough data was retrieved
+		//	data = append(data, code)
+		//	if bytes += len(code); bytes >= softResponseLimit {
+		//		break
+		//	}
+		//}
 		return p.replyCode(r.ReqID, data)
 	}, r.ReqID, uint64(len(r.Reqs)), nil
 }
@@ -334,33 +331,33 @@ func handleGetReceipts(msg Decoder) (serveRequestFn, uint64, uint64, error) {
 	}
 	return func(backend serverBackend, p *clientPeer, waitOrStop func() bool) *reply {
 		var (
-			bytes    int
+			//bytes    int
 			receipts []rlp.RawValue
 		)
-		bc := backend.BlockChain()
-		for i, hash := range r.Hashes {
-			if i != 0 && !waitOrStop() {
-				return nil
-			}
-			if bytes >= softResponseLimit {
-				break
-			}
-			// Retrieve the requested block's receipts, skipping if unknown to us
-			results := bc.GetReceiptsByHash(hash)
-			if results == nil {
-				if header := bc.GetHeaderByHash(hash); header == nil || header.ReceiptHash != types.EmptyReceiptsHash {
-					p.bumpInvalid()
-					continue
-				}
-			}
-			// If known, encode and queue for response packet
-			if encoded, err := rlp.EncodeToBytes(results); err != nil {
-				log.Error("Failed to encode receipt", "err", err)
-			} else {
-				receipts = append(receipts, encoded)
-				bytes += len(encoded)
-			}
-		}
+		//bc := backend.BlockChain()
+		//for i, hash := range r.Hashes {
+		//	if i != 0 && !waitOrStop() {
+		//		return nil
+		//	}
+		//	if bytes >= softResponseLimit {
+		//		break
+		//	}
+		//	// Retrieve the requested block's receipts, skipping if unknown to us
+		//	results := bc.GetReceiptsByHash(hash)
+		//	if results == nil {
+		//		if header := bc.GetHeaderByHash(hash); header == nil || header.ReceiptHash != types.EmptyReceiptsHash {
+		//			p.bumpInvalid()
+		//			continue
+		//		}
+		//	}
+		//	// If known, encode and queue for response packet
+		//	if encoded, err := rlp.EncodeToBytes(results); err != nil {
+		//		log.Error("Failed to encode receipt", "err", err)
+		//	} else {
+		//		receipts = append(receipts, encoded)
+		//		bytes += len(encoded)
+		//	}
+		//}
 		return p.replyReceiptsRLP(r.ReqID, receipts)
 	}, r.ReqID, uint64(len(r.Hashes)), nil
 }
@@ -373,77 +370,77 @@ func handleGetProofs(msg Decoder) (serveRequestFn, uint64, uint64, error) {
 	}
 	return func(backend serverBackend, p *clientPeer, waitOrStop func() bool) *reply {
 		var (
-			lastBHash common.Hash
-			root      common.Hash
-			header    *types.Header
-			err       error
+		//lastBHash common.Hash
+		//root      common.Hash
+		//header    *types.Header
+		//err       error
 		)
-		bc := backend.BlockChain()
+		//bc := backend.BlockChain()
 		nodes := light.NewNodeSet()
 
-		for i, request := range r.Reqs {
-			if i != 0 && !waitOrStop() {
-				return nil
-			}
-			// Look up the root hash belonging to the request
-			if request.BHash != lastBHash {
-				root, lastBHash = common.Hash{}, request.BHash
-
-				if header = bc.GetHeaderByHash(request.BHash); header == nil {
-					p.Log().Warn("Failed to retrieve header for proof", "hash", request.BHash)
-					p.bumpInvalid()
-					continue
-				}
-				// Refuse to search stale state data in the database since looking for
-				// a non-exist key is kind of expensive.
-				local := bc.CurrentHeader().Number.Uint64()
-				if !backend.ArchiveMode() && header.Number.Uint64()+core.TriesInMemory <= local {
-					p.Log().Debug("Reject stale trie request", "number", header.Number.Uint64(), "head", local)
-					p.bumpInvalid()
-					continue
-				}
-				root = header.Root
-			}
-			// If a header lookup failed (non existent), ignore subsequent requests for the same header
-			if root == (common.Hash{}) {
-				p.bumpInvalid()
-				continue
-			}
-			// Open the account or storage trie for the request
-			statedb := bc.StateCache()
-
-			var trie state.Trie
-			switch len(request.AccKey) {
-			case 0:
-				// No account key specified, open an account trie
-				trie, err = statedb.OpenTrie(root)
-				if trie == nil || err != nil {
-					p.Log().Warn("Failed to open storage trie for proof", "block", header.Number, "hash", header.Hash(), "root", root, "err", err)
-					continue
-				}
-			default:
-				// Account key specified, open a storage trie
-				account, err := getAccount(statedb.TrieDB(), root, common.BytesToHash(request.AccKey))
-				if err != nil {
-					p.Log().Warn("Failed to retrieve account for proof", "block", header.Number, "hash", header.Hash(), "account", common.BytesToHash(request.AccKey), "err", err)
-					p.bumpInvalid()
-					continue
-				}
-				trie, err = statedb.OpenStorageTrie(root, common.BytesToHash(request.AccKey), account.Root)
-				if trie == nil || err != nil {
-					p.Log().Warn("Failed to open storage trie for proof", "block", header.Number, "hash", header.Hash(), "account", common.BytesToHash(request.AccKey), "root", account.Root, "err", err)
-					continue
-				}
-			}
-			// Prove the user's request from the account or storage trie
-			if err := trie.Prove(request.Key, request.FromLevel, nodes); err != nil {
-				p.Log().Warn("Failed to prove state request", "block", header.Number, "hash", header.Hash(), "err", err)
-				continue
-			}
-			if nodes.DataSize() >= softResponseLimit {
-				break
-			}
-		}
+		//for i, request := range r.Reqs {
+		//	if i != 0 && !waitOrStop() {
+		//		return nil
+		//	}
+		//	// Look up the root hash belonging to the request
+		//	if request.BHash != lastBHash {
+		//		root, lastBHash = common.Hash{}, request.BHash
+		//
+		//		if header = bc.GetHeaderByHash(request.BHash); header == nil {
+		//			p.Log().Warn("Failed to retrieve header for proof", "hash", request.BHash)
+		//			p.bumpInvalid()
+		//			continue
+		//		}
+		//		// Refuse to search stale state data in the database since looking for
+		//		// a non-exist key is kind of expensive.
+		//		local := bc.CurrentHeader().Number.Uint64()
+		//		if !backend.ArchiveMode() && header.Number.Uint64()+core.TriesInMemory <= local {
+		//			p.Log().Debug("Reject stale trie request", "number", header.Number.Uint64(), "head", local)
+		//			p.bumpInvalid()
+		//			continue
+		//		}
+		//		root = header.Root
+		//	}
+		//	// If a header lookup failed (non existent), ignore subsequent requests for the same header
+		//	if root == (common.Hash{}) {
+		//		p.bumpInvalid()
+		//		continue
+		//	}
+		//	// Open the account or storage trie for the request
+		//	statedb := bc.StateCache()
+		//
+		//	var trie state.Trie
+		//	switch len(request.AccKey) {
+		//	case 0:
+		//		// No account key specified, open an account trie
+		//		trie, err = statedb.OpenTrie(root)
+		//		if trie == nil || err != nil {
+		//			p.Log().Warn("Failed to open storage trie for proof", "block", header.Number, "hash", header.Hash(), "root", root, "err", err)
+		//			continue
+		//		}
+		//	default:
+		//		// Account key specified, open a storage trie
+		//		account, err := getAccount(statedb.TrieDB(), root, common.BytesToHash(request.AccKey))
+		//		if err != nil {
+		//			p.Log().Warn("Failed to retrieve account for proof", "block", header.Number, "hash", header.Hash(), "account", common.BytesToHash(request.AccKey), "err", err)
+		//			p.bumpInvalid()
+		//			continue
+		//		}
+		//		trie, err = statedb.OpenStorageTrie(root, common.BytesToHash(request.AccKey), account.Root)
+		//		if trie == nil || err != nil {
+		//			p.Log().Warn("Failed to open storage trie for proof", "block", header.Number, "hash", header.Hash(), "account", common.BytesToHash(request.AccKey), "root", account.Root, "err", err)
+		//			continue
+		//		}
+		//	}
+		//	// Prove the user's request from the account or storage trie
+		//	if err := trie.Prove(request.Key, request.FromLevel, nodes); err != nil {
+		//		p.Log().Warn("Failed to prove state request", "block", header.Number, "hash", header.Hash(), "err", err)
+		//		continue
+		//	}
+		//	if nodes.DataSize() >= softResponseLimit {
+		//		break
+		//	}
+		//}
 		return p.replyProofsV2(r.ReqID, nodes.NodeList())
 	}, r.ReqID, uint64(len(r.Reqs)), nil
 }
@@ -456,48 +453,48 @@ func handleGetHelperTrieProofs(msg Decoder) (serveRequestFn, uint64, uint64, err
 	}
 	return func(backend serverBackend, p *clientPeer, waitOrStop func() bool) *reply {
 		var (
-			lastIdx  uint64
-			lastType uint
-			auxTrie  *trie.Trie
-			auxBytes int
-			auxData  [][]byte
+			//	lastIdx  uint64
+			//	lastType uint
+			//	auxTrie  *trie.Trie
+			//	auxBytes int
+			auxData [][]byte
 		)
-		bc := backend.BlockChain()
+		//bc := backend.BlockChain()
 		nodes := light.NewNodeSet()
-		for i, request := range r.Reqs {
-			if i != 0 && !waitOrStop() {
-				return nil
-			}
-			if auxTrie == nil || request.Type != lastType || request.TrieIdx != lastIdx {
-				lastType, lastIdx = request.Type, request.TrieIdx
-				auxTrie = backend.GetHelperTrie(request.Type, request.TrieIdx)
-			}
-			if auxTrie == nil {
-				return nil
-			}
-			// TODO(rjl493456442) short circuit if the proving is failed.
-			// The original client side code has a dirty hack to retrieve
-			// the headers with no valid proof. Keep the compatibility for
-			// legacy les protocol and drop this hack when the les2/3 are
-			// not supported.
-			err := auxTrie.Prove(request.Key, request.FromLevel, nodes)
-			if p.version >= lpv4 && err != nil {
-				return nil
-			}
-			if request.Type == htCanonical && request.AuxReq == htAuxHeader && len(request.Key) == 8 {
-				header := bc.GetHeaderByNumber(binary.BigEndian.Uint64(request.Key))
-				data, err := rlp.EncodeToBytes(header)
-				if err != nil {
-					log.Error("Failed to encode header", "err", err)
-					return nil
-				}
-				auxData = append(auxData, data)
-				auxBytes += len(data)
-			}
-			if nodes.DataSize()+auxBytes >= softResponseLimit {
-				break
-			}
-		}
+		//for i, request := range r.Reqs {
+		//	if i != 0 && !waitOrStop() {
+		//		return nil
+		//	}
+		//	if auxTrie == nil || request.Type != lastType || request.TrieIdx != lastIdx {
+		//		lastType, lastIdx = request.Type, request.TrieIdx
+		//		auxTrie = backend.GetHelperTrie(request.Type, request.TrieIdx)
+		//	}
+		//	if auxTrie == nil {
+		//		return nil
+		//	}
+		//	// TODO(rjl493456442) short circuit if the proving is failed.
+		//	// The original client side code has a dirty hack to retrieve
+		//	// the headers with no valid proof. Keep the compatibility for
+		//	// legacy les protocol and drop this hack when the les2/3 are
+		//	// not supported.
+		//	err := auxTrie.Prove(request.Key, request.FromLevel, nodes)
+		//	if p.version >= lpv4 && err != nil {
+		//		return nil
+		//	}
+		//	if request.Type == htCanonical && request.AuxReq == htAuxHeader && len(request.Key) == 8 {
+		//		header := bc.GetHeaderByNumber(binary.BigEndian.Uint64(request.Key))
+		//		data, err := rlp.EncodeToBytes(header)
+		//		if err != nil {
+		//			log.Error("Failed to encode header", "err", err)
+		//			return nil
+		//		}
+		//		auxData = append(auxData, data)
+		//		auxBytes += len(data)
+		//	}
+		//	if nodes.DataSize()+auxBytes >= softResponseLimit {
+		//		break
+		//	}
+		//}
 		return p.replyHelperTrieProofs(r.ReqID, HelperTrieResps{Proofs: nodes.NodeList(), AuxData: auxData})
 	}, r.ReqID, uint64(len(r.Reqs)), nil
 }
@@ -542,12 +539,12 @@ func handleGetTxStatus(msg Decoder) (serveRequestFn, uint64, uint64, error) {
 	}
 	return func(backend serverBackend, p *clientPeer, waitOrStop func() bool) *reply {
 		stats := make([]light.TxStatus, len(r.Hashes))
-		for i, hash := range r.Hashes {
-			if i != 0 && !waitOrStop() {
-				return nil
-			}
-			stats[i] = txStatus(backend, hash)
-		}
+		//for i, hash := range r.Hashes {
+		//	if i != 0 && !waitOrStop() {
+		//		return nil
+		//	}
+		//	stats[i] = txStatus(backend, hash)
+		//}
 		return p.replyTxStatus(r.ReqID, stats)
 	}, r.ReqID, uint64(len(r.Hashes)), nil
 }

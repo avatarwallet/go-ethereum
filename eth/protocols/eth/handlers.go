@@ -35,8 +35,8 @@ func handleGetBlockHeaders66(backend Backend, msg Decoder, peer *Peer) error {
 	if err := msg.Decode(&query); err != nil {
 		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
 	}
-	response := ServiceGetBlockHeadersQuery(backend.Chain(), query.GetBlockHeadersPacket, peer)
-	return peer.ReplyBlockHeadersRLP(query.RequestId, response)
+	//response := ServiceGetBlockHeadersQuery(backend.Chain(), query.GetBlockHeadersPacket, peer)
+	return peer.ReplyBlockHeadersRLP(query.RequestId, []rlp.RawValue{})
 }
 
 // ServiceGetBlockHeadersQuery assembles the response to a header query. It is
@@ -208,8 +208,8 @@ func handleGetBlockBodies66(backend Backend, msg Decoder, peer *Peer) error {
 	if err := msg.Decode(&query); err != nil {
 		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
 	}
-	response := ServiceGetBlockBodiesQuery(backend.Chain(), query.GetBlockBodiesPacket)
-	return peer.ReplyBlockBodiesRLP(query.RequestId, response)
+	//response := ServiceGetBlockBodiesQuery(backend.Chain(), query.GetBlockBodiesPacket)
+	return peer.ReplyBlockBodiesRLP(query.RequestId, []rlp.RawValue{})
 }
 
 // ServiceGetBlockBodiesQuery assembles the response to a body query. It is
@@ -239,8 +239,8 @@ func handleGetNodeData66(backend Backend, msg Decoder, peer *Peer) error {
 	if err := msg.Decode(&query); err != nil {
 		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
 	}
-	response := ServiceGetNodeDataQuery(backend.Chain(), query.GetNodeDataPacket)
-	return peer.ReplyNodeData(query.RequestId, response)
+	//response := ServiceGetNodeDataQuery(backend.Chain(), query.GetNodeDataPacket)
+	return peer.ReplyNodeData(query.RequestId, [][]byte{})
 }
 
 // ServiceGetNodeDataQuery assembles the response to a node data query. It is
@@ -276,8 +276,8 @@ func handleGetReceipts66(backend Backend, msg Decoder, peer *Peer) error {
 	if err := msg.Decode(&query); err != nil {
 		return fmt.Errorf("%w: message %v: %v", errDecode, msg, err)
 	}
-	response := ServiceGetReceiptsQuery(backend.Chain(), query.GetReceiptsPacket)
-	return peer.ReplyReceiptsRLP(query.RequestId, response)
+	//response := ServiceGetReceiptsQuery(backend.Chain(), query.GetReceiptsPacket)
+	return peer.ReplyReceiptsRLP(query.RequestId, []rlp.RawValue{})
 }
 
 // ServiceGetReceiptsQuery assembles the response to a receipt query. It is
@@ -484,28 +484,28 @@ func handleGetPooledTransactions66(backend Backend, msg Decoder, peer *Peer) err
 func answerGetPooledTransactions(backend Backend, query GetPooledTransactionsPacket, peer *Peer) ([]common.Hash, []rlp.RawValue) {
 	// Gather transactions until the fetch or network limits is reached
 	var (
-		bytes  int
+		//bytes  int
 		hashes []common.Hash
 		txs    []rlp.RawValue
 	)
-	for _, hash := range query {
-		if bytes >= softResponseLimit {
-			break
-		}
-		// Retrieve the requested transaction, skipping if unknown to us
-		tx := backend.TxPool().Get(hash)
-		if tx == nil {
-			continue
-		}
-		// If known, encode and queue for response packet
-		if encoded, err := rlp.EncodeToBytes(tx); err != nil {
-			log.Error("Failed to encode transaction", "err", err)
-		} else {
-			hashes = append(hashes, hash)
-			txs = append(txs, encoded)
-			bytes += len(encoded)
-		}
-	}
+	//for _, hash := range query {
+	//	if bytes >= softResponseLimit {
+	//		break
+	//	}
+	//	// Retrieve the requested transaction, skipping if unknown to us
+	//	tx := backend.TxPool().Get(hash)
+	//	if tx == nil {
+	//		continue
+	//	}
+	//	// If known, encode and queue for response packet
+	//	if encoded, err := rlp.EncodeToBytes(tx); err != nil {
+	//		log.Error("Failed to encode transaction", "err", err)
+	//	} else {
+	//		hashes = append(hashes, hash)
+	//		txs = append(txs, encoded)
+	//		bytes += len(encoded)
+	//	}
+	//}
 	return hashes, txs
 }
 
