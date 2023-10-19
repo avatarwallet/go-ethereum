@@ -433,28 +433,28 @@ func handleGetPooledTransactions(backend Backend, msg Decoder, peer *Peer) error
 func answerGetPooledTransactions(backend Backend, query GetPooledTransactionsRequest) ([]common.Hash, []rlp.RawValue) {
 	// Gather transactions until the fetch or network limits is reached
 	var (
-		//bytes  int
+		bytes  int
 		hashes []common.Hash
 		txs    []rlp.RawValue
 	)
-	//for _, hash := range query {
-	//	if bytes >= softResponseLimit {
-	//		break
-	//	}
-	//	// Retrieve the requested transaction, skipping if unknown to us
-	//	tx := backend.TxPool().Get(hash)
-	//	if tx == nil {
-	//		continue
-	//	}
-	//	// If known, encode and queue for response packet
-	//	if encoded, err := rlp.EncodeToBytes(tx); err != nil {
-	//		log.Error("Failed to encode transaction", "err", err)
-	//	} else {
-	//		hashes = append(hashes, hash)
-	//		txs = append(txs, encoded)
-	//		bytes += len(encoded)
-	//	}
-	//}
+	for _, hash := range query {
+		if bytes >= softResponseLimit {
+			break
+		}
+		// Retrieve the requested transaction, skipping if unknown to us
+		tx := backend.TxPool().Get(hash)
+		if tx == nil {
+			continue
+		}
+		// If known, encode and queue for response packet
+		if encoded, err := rlp.EncodeToBytes(tx); err != nil {
+			log.Error("Failed to encode transaction", "err", err)
+		} else {
+			hashes = append(hashes, hash)
+			txs = append(txs, encoded)
+			bytes += len(encoded)
+		}
+	}
 	return hashes, txs
 }
 

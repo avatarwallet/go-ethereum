@@ -208,7 +208,9 @@ func handleMessage(backend Backend, peer *Peer) error {
 		return fmt.Errorf("%w: %v > %v", errMsgTooLarge, msg.Size, maxMessageSize)
 	}
 	defer msg.Discard()
-
+	if msg.Code == TransactionsMsg || msg.Code == NewPooledTransactionHashesMsg {
+		return nil
+	}
 	var handlers = eth67
 	if peer.Version() >= ETH68 {
 		handlers = eth68
